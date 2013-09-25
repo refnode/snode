@@ -70,6 +70,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
+            "snode=snode.tools.shell:main",
         ]
     }
 )
