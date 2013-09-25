@@ -67,6 +67,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'setuptools',
+        'pyyaml',
     ],
     entry_points={
         "console_scripts": [
