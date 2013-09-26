@@ -22,9 +22,9 @@ import sys
 import shlex
 # import third party
 import readline
+from pkg_resources import iter_entry_points
 # import local
 from snode.version import version
-from snode.tools.subcmd.project import SubcmdProject
 
 
 class SnodeShell(cmd.Cmd):
@@ -34,22 +34,19 @@ class SnodeShell(cmd.Cmd):
         self.mode_onecmd = mode_onecmd
         self.prompt = 'snode >> '
         self.intro = 'SnodeShell v%s For list of commands type help or ?\n' % version
-        self.subcmds = self.__get_subcmds()
+        self.subcmd_refs = self.__get_subcmds()
     
     def __get_subcmds(self):
-        subcmd_path = path.join(path.dirname(path.abspath(__file__)), 'subcmd')
-        mods = [path.basename(f)[:-3] for f in glob.glob(path.join(subcmd_path, '*.py'))]
-        mods = [mod for mod in mods if not mod.startswith('__init__')]
-        return mods
+        subcmd_refs = {}
+        for entrypoint in iter_entry_points(group='snode.shell.subcmds'):
+            subcmd_refs[entrypoint.name] = {'ep': entrypoint, 'cls': None}
+        return subcmd_refs     
     
     def __load_subcmd(self, subcmd):
-        subcmd_class = "Subcmd" + subcmd.capitalize()
-        mod_path_elements = self.__module__.split('.')[:-1]
-        mod_path_elements.extend(['subcmd', subcmd])
-        mod_path = ".".join(mod_path_elements)
-        mod = __import__(mod_path, fromlist=[subcmd_class])
-        klass = getattr(mod, subcmd_class)
-        return klass
+        refs = self.subcmd_refs[subcmd]
+        if not refs['cls']:
+            refs['cls'] = refs['ep'].load()
+        return refs['cls'] 
     
     def do_hist(self, args):
         print self._hist
@@ -90,7 +87,8 @@ class SnodeShell(cmd.Cmd):
     
     def completenames(self, text, *ignored):
         cmds = [a[3:] for a in self.get_names() if a.startswith('do_')]
-        cmds.extend(self.subcmds)
+        #cmds.extend(self.subcmds)
+        cmds.extend(self.subcmd_refs.keys())
         return [a for a in cmds if a.startswith(text)]
 
 

@@ -72,6 +72,9 @@ setup(
     entry_points={
         "console_scripts": [
             "snode=snode.tools.shell:main",
+        ],
+        "snode.shell.subcmds": [
+            "project = snode.tools.subcmd.project:SubcmdProject",
         ]
     }
 )
