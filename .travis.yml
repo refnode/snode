@@ -4,6 +4,7 @@ python:
     - '2.7'
 # command to install dependencies
 install:
+    - 'pip install -U setuptools'
     - 'python bootstrap.py'
     - './bin/buildout -N'
 script: ./bin/test
