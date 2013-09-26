@@ -73,16 +73,24 @@ class SnodeShell(cmd.Cmd):
     
     def default(self, line):
         cmd, args, line = self.parseline(line)
+        mode_onecmd = False
+        if args:
+            mode_onecmd = True
         subcmd = self.__load_subcmd(cmd)
-        if self.mode_onecmd:
+        if self.mode_onecmd or mode_onecmd:
              subcmd().onecmd(args)
         else:
              subcmd().cmdloop()
     
-    def completenames(self, text):
+    def completedefault(self, *ignored):
+        args = shlex.split(ignored[1])
+        cmd = args[0]
+        subcmd = self.__load_subcmd(cmd)
+        return subcmd().completenames(" ".join(args[1:]))
+    
+    def completenames(self, text, *ignored):
         cmds = [a[3:] for a in self.get_names() if a.startswith('do_')]
         cmds.extend(self.subcmds)
-        print cmds
         return [a for a in cmds if a.startswith(text)]
 
 
