@@ -15,20 +15,41 @@
 
 # import std
 import cmd
+import glob
+import os
+from os import path
 import sys
 import shlex
 # import third party
 import readline
 # import local
 from snode.version import version
+from snode.tools.subcmd.project import SubcmdProject
 
 
 class SnodeShell(cmd.Cmd):
     
-    def __init__(self):
+    def __init__(self, mode_onecmd=False):
         cmd.Cmd.__init__(self)
+        self.mode_onecmd = mode_onecmd
         self.prompt = 'snode >> '
         self.intro = 'SnodeShell v%s For list of commands type help or ?\n' % version
+        self.subcmds = self.__get_subcmds()
+    
+    def __get_subcmds(self):
+        subcmd_path = path.join(path.dirname(path.abspath(__file__)), 'subcmd')
+        mods = [path.basename(f)[:-3] for f in glob.glob(path.join(subcmd_path, '*.py'))]
+        mods = [mod for mod in mods if not mod.startswith('__init__')]
+        return mods
+    
+    def __load_subcmd(self, subcmd):
+        subcmd_class = "Subcmd" + subcmd.capitalize()
+        mod_path_elements = self.__module__.split('.')[:-1]
+        mod_path_elements.extend(['subcmd', subcmd])
+        mod_path = ".".join(mod_path_elements)
+        mod = __import__(mod_path, fromlist=[subcmd_class])
+        klass = getattr(mod, subcmd_class)
+        return klass
     
     def do_hist(self, args):
         print self._hist
@@ -49,11 +70,25 @@ class SnodeShell(cmd.Cmd):
     def precmd(self, line):
         self._hist += [line.strip()]
         return line
+    
+    def default(self, line):
+        cmd, args, line = self.parseline(line)
+        subcmd = self.__load_subcmd(cmd)
+        if self.mode_onecmd:
+             subcmd().onecmd(args)
+        else:
+             subcmd().cmdloop()
+    
+    def completenames(self, text):
+        cmds = [a[3:] for a in self.get_names() if a.startswith('do_')]
+        cmds.extend(self.subcmds)
+        print cmds
+        return [a for a in cmds if a.startswith(text)]
 
 
 def main():
     if len(sys.argv) > 1:
-        SnodeShell().onecmd(" ".join(sys.argv[1:]))
+        SnodeShell(mode_onecmd=True).onecmd(" ".join(sys.argv[1:]))
     else:
         SnodeShell().cmdloop()
 
