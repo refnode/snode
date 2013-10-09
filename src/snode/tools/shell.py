@@ -15,13 +15,10 @@
 
 # import std
 import cmd
-import glob
 import os
-from os import path
 import sys
 import shlex
 # import third party
-import readline
 from pkg_resources import iter_entry_points
 # import local
 from snode.version import version
@@ -75,9 +72,9 @@ class SnodeShell(cmd.Cmd):
             mode_onecmd = True
         subcmd = self.__load_subcmd(cmd)
         if self.mode_onecmd or mode_onecmd:
-             subcmd().onecmd(args)
+            subcmd().onecmd(args)
         else:
-             subcmd().cmdloop()
+            subcmd().cmdloop()
     
     def completedefault(self, *ignored):
         args = shlex.split(ignored[1])
@@ -93,6 +90,12 @@ class SnodeShell(cmd.Cmd):
 
 
 def main():
+    ssh_mode = os.environ.get('SSH_ORIGINAL_COMMAND')
+    if ssh_mode:
+        sys.argv = []
+        sys.argv.append('snode')
+        sys.argv.extend(shlex.split(ssh_mode))
+        print sys.argv
     if len(sys.argv) > 1:
         SnodeShell(mode_onecmd=True).onecmd(" ".join(sys.argv[1:]))
     else:
